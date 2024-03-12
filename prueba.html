@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X</title> <!-- Cambiado el título a "X" -->
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            background-color: #121212;
+            color: #fff;
+        }
+
+        header {
+            background-color: #282828;
+            padding: 20px;
+            text-align: center;
+        }
+
+        main {
+            display: flex;
+            flex: 1;
+            flex-direction: column; /* Cambiado a columna para que los elementos se apilen verticalmente */
+        }
+
+        h1 {
+            margin-bottom: 10px; /* Añadido margen inferior para separar el título del buscador */
+        }
+
+        section {
+            display: flex;
+            flex-direction: column; /* Cambiado a columna para que los elementos se apilen verticalmente */
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .playlist {
+            width: 100%;
+            margin-bottom: 20px;
+            overflow: hidden;
+            transition: transform 0.3s ease-in-out;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .playlist:hover {
+            transform: scale(1.05);
+        }
+
+        .playlist img {
+            width: 80px; /* Ajusta el ancho de la imagen según tu preferencia */
+            height: 80px; /* Ajusta la altura de la imagen según tu preferencia */
+            object-fit: cover;
+            border-bottom: 2px solid #fff;
+            border-top-left-radius: 8px;
+            border-bottom-left-radius: 8px;
+            margin-right: 10px;
+        }
+
+        .playlist div {
+            flex: 1;
+            padding: 10px;
+        }
+
+        .playlist h3 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .playlist p {
+            margin: 0;
+            font-size: 14px;
+            opacity: 0.7;
+        }
+
+        input[type="text"], button {
+            margin-bottom: 10px;
+        }
+
+        /* Estilos para los resultados de búsqueda */
+        #searchResults div {
+            color: #fff;
+        }
+
+        #searchResults strong {
+            color: #8A2BE2; /* Morado */
+        }
+
+        /* Estilos para la sección de detalles de la canción */
+        #songDetails {
+            background-color: #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        #songDetails h2,
+        #songDetails p {
+            margin: 0;
+            padding: 5px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>X</h1> <!-- Cambiado el título a "X" -->
+    </header>
+
+    <main>
+        <section>
+            <div>
+                <input type="text" id="searchInput" placeholder="Buscar canciones" onkeyup="handleKeyPress(event)">
+                <button onclick="searchSongs()">Buscar</button>
+            </div>
+            <div id="searchResults"></div>
+            <div id="songDetails"></div>
+        </section>
+    </main>
+
+    <script>
+        function searchSongs() {
+            var searchInput = document.getElementById("searchInput").value;
+            var searchResults = document.getElementById("searchResults");
+
+            // Limpia los resultados y los detalles anteriores
+            searchResults.innerHTML = "";
+            document.getElementById("songDetails").style.display = "none";
+
+            // Realiza una solicitud a la API de iTunes Search
+            fetch(`https://itunes.apple.com/search?term=${searchInput}&entity=song`)
+                .then(response => response.json())
+                .then(data => {
+                    // Ordena los resultados por popularidad
+                    var sortedResults = data.results.sort((a, b) => b.popularity - a.popularity);
+
+                    // Mueve la coincidencia exacta al principio de la lista
+                    sortedResults.sort((a, b) => {
+                        var exactMatchA = a.trackName.toLowerCase() === searchInput.toLowerCase();
+                        var exactMatchB = b.trackName.toLowerCase() === searchInput.toLowerCase();
+                        return exactMatchB - exactMatchA;
+                    });
+
+                    // Muestra los resultados ordenados en la página
+                    sortedResults.forEach(function(song) {
+                        var resultDiv = document.createElement("div");
+                        resultDiv.className = "playlist";
+                        resultDiv.innerHTML = `<img src="${song.artworkUrl100}" alt="Portada">
+                                               <div>
+                                                   <h3>${song.trackName}</h3>
+                                                   <p>${song.artistName}</p>
+                                               </div>`;
+                        resultDiv.onclick = function() {
+                            showSongDetails(song);
+                        };
+                        searchResults.appendChild(resultDiv);
+                    });
+                })
+                .catch(error => console.error('Error en la búsqueda:', error));
+        }
+
+        function handleKeyPress(event) {
+            // Si la tecla presionada es "Enter", realiza la búsqueda
+            if (event.key === "Enter") {
+                searchSongs();
+            }
+        }
+
+        function showSongDetails(song) {
+            var songDetails = document.getElementById("songDetails");
+            songDetails.innerHTML = `<h2>${song.trackName}</h2>
+                                     <p>Artista: ${song.artistName}</p>
+                                     <p>Álbum: ${song.collectionName}</p>
+                                     <p>Género: ${song.primaryGenreName}</p>
+                                     <p>Fecha de lanzamiento: ${song.releaseDate}</p>`;
+            songDetails.style.display = "block";
+        }
+    </script>
+
+</body>
+</html>
